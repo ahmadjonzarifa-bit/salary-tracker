@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="ru" data-theme="dark">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ФинТрекер 8-BIT | Retro Pixel Salary Tracker</title>
+  
+  <!-- Пиксельные ретро шрифты Google Fonts с поддержкой кириллицы -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  
+  <!-- Font Awesome для иконок -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  
+  <!-- Chart.js для графиков -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+
+  <!-- Стили приложения (Пиксельный 2D Ретро стиль) -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- Фоновый эффект CRT сканлайнов (ретро ТВ / аркадный автомат) -->
+  <div class="crt-overlay"></div>
+
+  <div class="app-container">
+    <!-- Шапка приложения: Ретро Аркада -->
+    <header class="app-header pixel-box">
+      <div class="header-brand">
+        <div class="brand-logo pixel-border">
+          <i class="fa-solid fa-gamepad"></i>
+        </div>
+        <div class="brand-text">
+          <div class="retro-badge-top">★ 8-BIT EDITION ★</div>
+          <h1>ФИН-ТРЕКЕР</h1>
+          <span class="brand-sub">LEVEL 1 • УЧЕТ ЗОЛОТА И МАНЫ</span>
+        </div>
+      </div>
+
+      <div class="header-actions">
+        <!-- Выбор валюты -->
+        <div class="currency-selector pixel-button-look">
+          <i class="fa-solid fa-coins icon-gold"></i>
+          <select id="currencySelect" title="Выберите валюту">
+            <option value="RUB">₽ (RUB)</option>
+            <option value="USD">$ (USD)</option>
+            <option value="EUR">€ (EUR)</option>
+            <option value="KZT">₸ (KZT)</option>
+            <option value="UZS">UZS (сум)</option>
+          </select>
+        </div>
+
+        <!-- Переключатель звука 8-бит -->
+        <button id="soundToggleBtn" class="btn-icon pixel-btn" title="Звуки 8-BIT (Вкл/Выкл)">
+          <i class="fa-solid fa-volume-high" id="soundIcon"></i>
+        </button>
+
+        <!-- Переключатель темы (Ретро Ночь / Ретро День) -->
+        <button id="themeToggleBtn" class="btn-icon pixel-btn" title="Переключить тему">
+          <i class="fa-solid fa-sun" id="themeIcon"></i>
+        </button>
+
+        <!-- Интерактивная кнопка: Кошачья Лапка Удачи -->
+        <button id="luckyCatBtn" class="btn btn-secondary pixel-btn cat-lucky-btn" title="Лапка Кота Удачи (+МЯУ)">
+          <i class="fa-solid fa-paw cat-paw-bounce"></i>
+          <span>ЛАПКА</span>
+        </button>
+
+        <!-- Меню данных -->
+        <div class="dropdown-wrapper">
+          <button id="dataMenuBtn" class="btn btn-secondary pixel-btn" title="Управление данными">
+            <i class="fa-solid fa-floppy-disk"></i>
+            <span>СЕЙВЫ</span>
+            <i class="fa-solid fa-caret-down"></i>
+          </button>
+          <div id="dataDropdown" class="dropdown-menu pixel-box">
+            <button id="exportCsvBtn" class="dropdown-item">
+              <i class="fa-solid fa-file-csv"></i> Экспорт в CSV
+            </button>
+            <button id="exportJsonBtn" class="dropdown-item">
+              <i class="fa-solid fa-file-code"></i> Экспорт JSON (Сейв)
+            </button>
+            <label for="importJsonInput" class="dropdown-item file-label">
+              <i class="fa-solid fa-upload"></i> Загрузить сейв
+              <input type="file" id="importJsonInput" accept=".json" style="display: none;">
+            </label>
+            <div class="dropdown-divider"></div>
+            <button id="resetDemoBtn" class="dropdown-item text-danger">
+              <i class="fa-solid fa-rotate-left"></i> Демо-квест (Сброс)
+            </button>
+            <button id="clearAllBtn" class="dropdown-item text-danger">
+              <i class="fa-solid fa-skull"></i> Стереть память
+            </button>
+          </div>
+        </div>
+
+        <!-- Кнопка добавления транзакции с кошачьими лапками -->
+        <button id="openAddModalBtn" class="btn btn-primary pixel-btn-main cat-paw-btn">
+          <i class="fa-solid fa-paw paw-left"></i>
+          <span>НОВЫЙ КВЕСТ</span>
+          <i class="fa-solid fa-paw paw-right"></i>
+        </button>
+      </div>
+    </header>
+
+    <!-- Фильтр по периодам (В стиле меню выбора стадии/мира) -->
+    <section class="period-bar pixel-box">
+      <div class="period-label">
+        <i class="fa-solid fa-hourglass-half"></i> ПЕРИОД:
+      </div>
+      <div class="period-presets">
+        <button class="period-btn pixel-btn-sub active" data-period="all">ВСЁ ВРЕМЯ</button>
+        <button class="period-btn pixel-btn-sub" data-period="this_month">ЭТОТ МЕСЯЦ</button>
+        <button class="period-btn pixel-btn-sub" data-period="prev_month">ПРОШЛЫЙ МЕСЯЦ</button>
+        <button class="period-btn pixel-btn-sub" data-period="this_year">ЭТОТ ГОД</button>
+        <button class="period-btn pixel-btn-sub" data-period="custom">ВЫБОР ДАТ</button>
+      </div>
+      <div id="customDateRange" class="custom-date-range hidden">
+        <div class="date-input-group">
+          <label>ОТ:</label>
+          <input type="date" id="filterStartDate" class="pixel-input">
+        </div>
+        <div class="date-input-group">
+          <label>ДО:</label>
+          <input type="date" id="filterEndDate" class="pixel-input">
+        </div>
+        <button id="applyCustomDateBtn" class="btn btn-sm btn-secondary pixel-btn">OK</button>
+      </div>
+    </section>
+
+    <!-- KPI карточки сводки: Игровой статус (SCORE / HP / GOLD) -->
+    <section class="kpi-grid">
+      <!-- Баланс / Казна -->
+      <div class="kpi-card balance-card pixel-box">
+        <div class="kpi-header">
+          <span class="kpi-title"><i class="fa-solid fa-crown"></i> БАЛАНС КАЗНЫ</span>
+          <div class="kpi-icon-wrap balance-icon">
+            <i class="fa-solid fa-coins"></i>
+          </div>
+        </div>
+        <div class="kpi-value pixel-text-glow" id="kpiBalance">0 ₽</div>
+        <div class="kpi-subtext" id="kpiBalanceSubtext">
+          <span class="badge" id="kpiBalanceBadge">ПРОФИЦИТ</span>
+        </div>
+      </div>
+
+      <!-- Доходы / Лут -->
+      <div class="kpi-card income-card pixel-box">
+        <div class="kpi-header">
+          <span class="kpi-title"><i class="fa-solid fa-arrow-trend-up"></i> ДОБЫТО (+LOOT)</span>
+          <div class="kpi-icon-wrap income-icon">
+            <i class="fa-solid fa-gem"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-income" id="kpiIncome">+0 ₽</div>
+        <div class="kpi-subtext">
+          <span id="kpiIncomeCount">0 квестов</span>
+        </div>
+      </div>
+
+      <!-- Расходы / Траты -->
+      <div class="kpi-card expense-card pixel-box">
+        <div class="kpi-header">
+          <span class="kpi-title"><i class="fa-solid fa-arrow-trend-down"></i> ПОТРАЧЕНО (MANA)</span>
+          <div class="kpi-icon-wrap expense-icon">
+            <i class="fa-solid fa-wand-magic-sparkles"></i>
+          </div>
+        </div>
+        <div class="kpi-value text-expense" id="kpiExpense">-0 ₽</div>
+        <div class="kpi-subtext">
+          <span id="kpiExpenseCount">0 заклинаний</span>
+        </div>
+      </div>
+
+      <!-- Норма сбережений / HP шкала -->
+      <div class="kpi-card savings-card pixel-box">
+        <div class="kpi-header">
+          <span class="kpi-title"><i class="fa-solid fa-heart"></i> ЗАПАС ПРОЧНОСТИ</span>
+          <div class="kpi-icon-wrap savings-icon">
+            <i class="fa-solid fa-shield-heart"></i>
+          </div>
+        </div>
+        <div class="kpi-value" id="kpiSavings">0%</div>
+        <div class="kpi-subtext">
+          <span id="kpiSavingsSubtext">сбережения в золоте</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- Дашборд с графиками: 8-BIT СТИЛЬ -->
+    <section class="charts-section">
+      <div class="charts-grid">
+        <!-- Столбчатый график: Сравнение доходов и расходов -->
+        <div class="chart-card full-width pixel-box">
+          <div class="chart-card-header">
+            <div>
+              <h3><i class="fa-solid fa-chart-column"></i> БАТТЛ: ЗОЛОТО VS ТРАТЫ</h3>
+              <p class="chart-subtitle">Помесячная боевая статистика поступлений и расходов</p>
+            </div>
+            <div class="chart-legend-retro">
+              <span class="legend-chip loot"><i class="fa-solid fa-square"></i> ДОХОД (#DFE94B)</span>
+              <span class="legend-chip mana"><i class="fa-solid fa-square"></i> РАСХОД (#836CEC)</span>
+            </div>
+          </div>
+          <div class="chart-wrapper">
+            <canvas id="barComparisonChart"></canvas>
+          </div>
+        </div>
+
+        <!-- Круговая диаграмма: Структура расходов -->
+        <div class="chart-card pixel-box">
+          <div class="chart-card-header">
+            <div>
+              <h3><i class="fa-solid fa-chart-pie"></i> КУДА УТЕКАЕТ МАНА</h3>
+              <p class="chart-subtitle">Распределение трат по категориям</p>
+            </div>
+          </div>
+          <div class="chart-wrapper doughnut-wrapper">
+            <canvas id="expenseCategoryChart"></canvas>
+            <div id="noExpenseData" class="no-chart-data hidden">[ НЕТ ТРАТ ]</div>
+          </div>
+        </div>
+
+        <!-- Круговая диаграмма: Источники доходов -->
+        <div class="chart-card pixel-box">
+          <div class="chart-card-header">
+            <div>
+              <h3><i class="fa-solid fa-trophy"></i> ИСТОЧНИКИ ЗОЛОТА</h3>
+              <p class="chart-subtitle">Распределение добычи по категориям</p>
+            </div>
+          </div>
+          <div class="chart-wrapper doughnut-wrapper">
+            <canvas id="incomeCategoryChart"></canvas>
+            <div id="noIncomeData" class="no-chart-data hidden">[ НЕТ ДОХОДОВ ]</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Секция CRUD: Журнал квестов и операций -->
+    <section class="transactions-section pixel-box">
+      <div class="section-header">
+        <div>
+          <h2><i class="fa-solid fa-scroll"></i> ЖУРНАЛ ОПЕРАЦИЙ (CRUD)</h2>
+          <p class="section-subtitle">Полное управление записями: Добавление • Чтение • Правка • Удаление</p>
+        </div>
+        <button id="addTransactionSecondaryBtn" class="btn btn-sm btn-primary pixel-btn-main cat-paw-btn">
+          <i class="fa-solid fa-paw"></i> + ЗАПИСЬ 🐾
+        </button>
+      </div>
+
+      <!-- Панель фильтров и поиска -->
+      <div class="filters-panel pixel-panel">
+        <div class="search-box">
+          <i class="fa-solid fa-magnifying-glass"></i>
+          <input type="text" id="searchInput" class="pixel-input" placeholder="ПОИСК В ЖУРНАЛЕ...">
+          <button id="clearSearchBtn" class="clear-search hidden"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+
+        <div class="filter-controls">
+          <!-- Фильтр по типу -->
+          <div class="filter-group">
+            <label><i class="fa-solid fa-filter"></i> ТИП:</label>
+            <select id="filterType" class="pixel-select">
+              <option value="all">ВСЕ</option>
+              <option value="income">ДОХОД (+)</option>
+              <option value="expense">РАСХОД (-)</option>
+            </select>
+          </div>
+
+          <!-- Фильтр по категории -->
+          <div class="filter-group">
+            <label><i class="fa-solid fa-tag"></i> ГИЛЬДИЯ:</label>
+            <select id="filterCategory" class="pixel-select">
+              <option value="all">ВСЕ КАТЕГОРИИ</option>
+            </select>
+          </div>
+
+          <!-- Сортировка -->
+          <div class="filter-group">
+            <label><i class="fa-solid fa-sort"></i> СОРТ:</label>
+            <select id="filterSort" class="pixel-select">
+              <option value="date_desc">НОВЫЕ СВЕРХУ</option>
+              <option value="date_asc">СТАРЫЕ СВЕРХУ</option>
+              <option value="amount_desc">БОЛЬШЕ ЗОЛОТА</option>
+              <option value="amount_asc">МЕНЬШЕ ЗОЛОТА</option>
+            </select>
+          </div>
+        </div>
+      </div>
+
+      <!-- Таблица транзакций в стиле RPG журнала -->
+      <div class="table-container pixel-border">
+        <table class="transactions-table">
+          <thead>
+            <tr>
+              <th>ДАТА</th>
+              <th>КАТЕГОРИЯ</th>
+              <th>ОПИСАНИЕ</th>
+              <th>ТИП</th>
+              <th>СУММА</th>
+              <th class="text-right">ДЕЙСТВИЯ</th>
+            </tr>
+          </thead>
+          <tbody id="transactionsTableBody">
+            <!-- Заполняется динамически -->
+          </tbody>
+        </table>
+
+        <!-- Пустое состояние -->
+        <div id="emptyState" class="empty-state hidden">
+          <div class="empty-icon">
+            <i class="fa-solid fa-cat"></i>
+          </div>
+          <h3>ЖУРНАЛ ПУСТ</h3>
+          <p>В этом подземелье пока нет записей. Создай первую операцию лапкой!</p>
+          <button id="emptyAddBtn" class="btn btn-primary btn-sm pixel-btn-main cat-paw-btn">
+            <i class="fa-solid fa-paw"></i> НАЧАТЬ КВЕСТ 🐾
+          </button>
+        </div>
+      </div>
+
+      <!-- Нижняя панель таблицы (Счетчик) -->
+      <div class="table-footer">
+        <div class="table-info">
+          ЗАПИСЕЙ В ЛОГЕ: <span id="displayedCount" class="text-highlight">0</span> ИЗ <span id="totalCount" class="text-highlight">0</span>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <!-- Модальное окно: Создание / Редактирование (CRUD: Create & Update) -->
+  <div id="transactionModal" class="modal-backdrop">
+    <div class="modal-box pixel-box">
+      <div class="modal-header">
+        <h3 id="modalTitle"><i class="fa-solid fa-scroll"></i> НОВАЯ ЗАПИСЬ</h3>
+        <button id="closeModalBtn" class="close-btn pixel-btn" title="Закрыть">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <form id="transactionForm" novalidate>
+        <input type="hidden" id="editTransactionId">
+
+        <!-- Переключатель типа: Расход / Доход с лапками -->
+        <div class="type-toggle-group pixel-border">
+          <button type="button" class="type-toggle-btn active-expense pixel-btn-tab" id="typeExpenseBtn" data-type="expense">
+            <i class="fa-solid fa-paw"></i> РАСХОД
+          </button>
+          <button type="button" class="type-toggle-btn pixel-btn-tab" id="typeIncomeBtn" data-type="income">
+            <i class="fa-solid fa-paw"></i> ДОХОД
+          </button>
+        </div>
+        <input type="hidden" id="formType" value="expense">
+
+        <!-- Сумма -->
+        <div class="form-group">
+          <label for="formAmount">СУММА (<span class="currency-symbol">₽</span>) <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-coins"></i>
+            <input type="number" id="formAmount" class="pixel-input" placeholder="0.00" min="0.01" step="any" required>
+          </div>
+          <span class="field-error" id="amountError"></span>
+        </div>
+
+        <!-- Категория -->
+        <div class="form-group">
+          <label for="formCategory">КАТЕГОРИЯ <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-tag"></i>
+            <select id="formCategory" class="pixel-select" required>
+              <!-- Заполняется динамически -->
+            </select>
+          </div>
+          <span class="field-error" id="categoryError"></span>
+        </div>
+
+        <!-- Дата -->
+        <div class="form-group">
+          <label for="formDate">ДАТА <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-calendar-day"></i>
+            <input type="date" id="formDate" class="pixel-input" required>
+          </div>
+          <span class="field-error" id="dateError"></span>
+        </div>
+
+        <!-- Описание / Заметка -->
+        <div class="form-group">
+          <label for="formNote">ОПИСАНИЕ КВЕСТА</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-comment-dots"></i>
+            <input type="text" id="formNote" class="pixel-input" placeholder="Например: Покупка зелий здоровья">
+          </div>
+        </div>
+
+        <!-- Кнопки формы -->
+        <div class="modal-footer">
+          <button type="button" id="cancelModalBtn" class="btn btn-secondary pixel-btn">ОТМЕНА</button>
+          <button type="submit" id="saveTransactionBtn" class="btn btn-primary pixel-btn-main cat-paw-btn">
+            <i class="fa-solid fa-paw"></i> СОХРАНИТЬ ЛАПКОЙ 🐾
+          </button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Модальное окно: Подтверждение удаления (CRUD: Delete) -->
+  <div id="deleteModal" class="modal-backdrop">
+    <div class="modal-box modal-sm pixel-box">
+      <div class="modal-header">
+        <h3 class="text-danger"><i class="fa-solid fa-skull"></i> УДАЛЕНИЕ ЗАПИСИ</h3>
+        <button id="closeDeleteModalBtn" class="close-btn pixel-btn" title="Закрыть">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+      <div class="modal-body">
+        <p>Вы действительно хотите уничтожить этот свиток?</p>
+        <div id="deleteDetails" class="delete-preview-box pixel-border">
+          <!-- Заполняется динамически -->
+        </div>
+        <p class="text-danger small">[ ВНИМАНИЕ: ДЕЙСТВИЕ БЕЗВОЗВРАТНО ]</p>
+      </div>
+      <div class="modal-footer">
+        <button type="button" id="cancelDeleteBtn" class="btn btn-secondary pixel-btn">ОТМЕНА</button>
+        <button type="button" id="confirmDeleteBtn" class="btn btn-danger pixel-btn-danger cat-paw-btn">
+          <i class="fa-solid fa-paw"></i> СЖЕЧЬ ЛАПКОЙ 🐾
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Всплывающие уведомления (Toasts) -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <!-- Основной скрипт логики -->
+  <script src="script.js"></script>
+</body>
+</html>

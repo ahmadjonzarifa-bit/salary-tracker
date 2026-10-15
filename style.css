@@ -1,0 +1,1317 @@
+/* ==========================================================================
+   ФинТрекер 8-BIT - Стили приложения (style.css)
+   Стиль: 2D Ретро Пиксельные Игры (Pixel Art / Arcade / 8-bit RPG)
+   Палитра:
+     - COLOR 1: #DFE94B (Неоновый лайм / Золото)
+     - COLOR 2: #836CEC (Фиолетовый индиго / Мана)
+   ========================================================================== */
+
+:root {
+  /* Палитра из запроса */
+  --color-1: #DFE94B;       /* Яркий лайм (для плашек, кнопок, графиков, бейджей) */
+  --color-1-hover: #cbe030;
+  --color-1-dim: rgba(223, 233, 75, 0.18);
+
+  --color-2: #836CEC;       /* Сиренево-фиолетовый */
+  --color-2-hover: #7155e8;
+  --color-2-dim: rgba(131, 108, 236, 0.22);
+
+  /* Базовые цвета для темной темы (Ретро Аркада) */
+  --bg-body: #120d26;
+  --bg-card: #1e163d;
+  --bg-card-inner: #291e52;
+  --bg-input: #0e0920;
+  
+  --border-pixel: #000000;
+  --pixel-outline: 3px solid #000000;
+  --pixel-shadow: 4px 4px 0px #000000;
+  --pixel-shadow-sm: 2px 2px 0px #000000;
+  --pixel-shadow-hover: 6px 6px 0px #000000;
+
+  --text-main: #ffffff;
+  --text-muted: #b8b0e0;
+  
+  /* Цвета текста для темной темы */
+  --text-header: #DFE94B;
+  --text-income: #DFE94B;
+  --text-expense: #c4b5fd;
+  --text-accent: #DFE94B;
+  
+  --danger: #ff4365;
+  --danger-hover: #e02f50;
+
+  --font-pixel: 'Press Start 2P', monospace;
+  --font-sub: 'VT323', monospace;
+}
+
+/* ==========================================================================
+   Светлая тема: Гарантированная 100% читаемость всех элементов и текстов
+   ========================================================================== */
+[data-theme="light"] {
+  --bg-body: #ece8fc;
+  --bg-card: #ffffff;
+  --bg-card-inner: #f3efff;
+  --bg-input: #ffffff;
+  
+  --border-pixel: #000000;
+  --text-main: #120d26;
+  --text-muted: #53457a;
+
+  /* В светлой теме лаймовый #DFE94B на белом фоне невидим,
+     поэтому для текста доходов и акцентов используется контрастный насыщенный темно-лаймовый/оливковый (#344700),
+     а для заголовков — глубокий ретро-индиго (#1a103c) с яркими лаймовыми пиксельными бейджами */
+  --text-header: #1b1040;
+  --text-income: #2d4200;
+  --text-expense: #6445dc;
+  --text-accent: #1b1040;
+}
+
+/* ==========================================================================
+   Сброс стилей и сетка ретро-фона
+   ========================================================================== */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+
+body {
+  font-family: var(--font-sub);
+  font-size: 19px;
+  background-color: var(--bg-body);
+  color: var(--text-main);
+  line-height: 1.4;
+  min-height: 100vh;
+  position: relative;
+  overflow-x: hidden;
+  background-image: 
+    radial-gradient(var(--color-2-dim) 1px, transparent 1px),
+    radial-gradient(var(--color-1-dim) 1px, transparent 1px);
+  background-size: 24px 24px;
+  background-position: 0 0, 12px 12px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* CRT Scanlines эффект */
+.crt-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 9999;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.22) 50%);
+  background-size: 100% 4px;
+  opacity: 0.35;
+}
+
+.app-container {
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 24px 16px 64px;
+  display: flex;
+  flex-direction: column;
+  gap: 24px;
+  position: relative;
+  z-index: 10;
+}
+
+/* ==========================================================================
+   Пиксельные блоки и рамки (Pixel UI Box)
+   ========================================================================== */
+.pixel-box {
+  background: var(--bg-card);
+  border: 4px solid var(--border-pixel);
+  box-shadow: 
+    6px 6px 0px #000000,
+    inset -3px -3px 0px rgba(0,0,0,0.35),
+    inset 3px 3px 0px rgba(255,255,255,0.15);
+  position: relative;
+}
+
+.pixel-border {
+  border: 3px solid var(--border-pixel);
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.pixel-panel {
+  background: var(--bg-card-inner);
+  border: 3px solid var(--border-pixel);
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.4);
+}
+
+/* ==========================================================================
+   Пиксельные кнопки (Pixel Buttons)
+   ========================================================================== */
+.btn {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  letter-spacing: 0.5px;
+  padding: 10px 16px;
+  border: 3px solid #000000;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  text-transform: uppercase;
+  user-select: none;
+  box-shadow: 4px 4px 0px #000000;
+  transition: transform 0.05s ease, box-shadow 0.05s ease;
+}
+
+.btn:active {
+  transform: translate(3px, 3px);
+  box-shadow: 1px 1px 0px #000000;
+}
+
+.pixel-btn-main {
+  background: var(--color-1);
+  color: #000000;
+  font-weight: 700;
+}
+
+.pixel-btn-main:hover {
+  background: var(--color-1-hover);
+  box-shadow: 5px 5px 0px #000000;
+}
+
+.btn-secondary,
+.pixel-btn {
+  background: var(--color-2);
+  color: #ffffff;
+}
+
+.btn-secondary:hover,
+.pixel-btn:hover {
+  background: var(--color-2-hover);
+}
+
+.btn-danger,
+.pixel-btn-danger {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.btn-danger:hover,
+.pixel-btn-danger:hover {
+  background: var(--danger-hover);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 9.5px;
+}
+
+/* ==========================================================================
+   Кнопки с кошачьими лапками (Cat Paw Buttons)
+   ========================================================================== */
+.cat-paw-btn {
+  position: relative;
+  overflow: visible;
+}
+
+.cat-paw-btn i.fa-paw {
+  font-size: 13px;
+  transition: transform 0.15s ease;
+  color: #000000;
+}
+
+[data-theme="dark"] .cat-paw-btn.btn-secondary i.fa-paw,
+.cat-paw-btn.btn-danger i.fa-paw {
+  color: #ffffff;
+}
+
+.cat-paw-btn:hover i.fa-paw {
+  transform: rotate(-15deg) scale(1.2);
+}
+
+.cat-paw-btn .paw-left {
+  margin-right: 4px;
+}
+
+.cat-paw-btn .paw-right {
+  margin-left: 4px;
+}
+
+/* Кнопка Лапка Удачи */
+.cat-lucky-btn {
+  background: var(--color-1) !important;
+  color: #000000 !important;
+  font-weight: 700;
+  border: 3px solid #000000;
+}
+
+.cat-lucky-btn:hover {
+  background: var(--color-1-hover) !important;
+  transform: translateY(-2px);
+}
+
+.cat-paw-bounce {
+  display: inline-block;
+  animation: pawWaving 1.4s ease-in-out infinite;
+  transform-origin: 50% 80%;
+  color: #000000;
+}
+
+@keyframes pawWaving {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(-18deg) scale(1.1); }
+  50% { transform: rotate(8deg); }
+  75% { transform: rotate(-10deg); }
+}
+
+/* Всплывающий отпечаток лапки при клике */
+.floating-paw {
+  position: fixed;
+  pointer-events: none;
+  font-size: 26px;
+  color: var(--color-1);
+  text-shadow: 2px 2px 0px #000000;
+  z-index: 10000;
+  animation: floatPawUp 0.8s ease-out forwards;
+}
+
+@keyframes floatPawUp {
+  0% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(0.6) rotate(0deg);
+  }
+  50% {
+    transform: translate(-50%, -80px) scale(1.3) rotate(-15deg);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -120px) scale(1) rotate(15deg);
+  }
+}
+
+.btn-icon {
+  width: 44px;
+  height: 44px;
+  padding: 0;
+  font-size: 16px;
+}
+
+/* ==========================================================================
+   Шапка приложения
+   ========================================================================== */
+.app-header {
+  padding: 18px 24px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 16px;
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.brand-logo {
+  width: 56px;
+  height: 56px;
+  background: var(--color-2);
+  color: var(--color-1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 26px;
+  border: 3px solid #000000;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.retro-badge-top {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  color: var(--color-1);
+  background: #000000;
+  display: inline-block;
+  padding: 3px 8px;
+  margin-bottom: 4px;
+  border: 1px solid #000;
+}
+
+.brand-text h1 {
+  font-family: var(--font-pixel);
+  font-size: 22px;
+  letter-spacing: -0.5px;
+  color: var(--text-header);
+  display: inline-block;
+}
+
+[data-theme="dark"] .brand-text h1 {
+  text-shadow: 3px 3px 0px #000000;
+}
+
+[data-theme="light"] .brand-text h1 {
+  background: var(--color-1);
+  color: #000000;
+  padding: 2px 8px;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+}
+
+.brand-sub {
+  font-family: var(--font-sub);
+  font-size: 18px;
+  color: var(--text-muted);
+  letter-spacing: 1px;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Селектор валюты */
+.currency-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-2);
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  padding: 8px 12px;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: #ffffff;
+}
+
+.currency-selector select {
+  background: transparent;
+  border: none;
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--color-1);
+  outline: none;
+  cursor: pointer;
+}
+
+.currency-selector select option {
+  background: #1a1438;
+  color: #ffffff;
+}
+
+.icon-gold {
+  color: var(--color-1);
+}
+
+/* Выпадающее меню сейвов */
+.dropdown-wrapper {
+  position: relative;
+}
+
+.dropdown-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 240px;
+  padding: 8px 0;
+  z-index: 100;
+  display: none;
+}
+
+.dropdown-wrapper.open .dropdown-menu {
+  display: block;
+}
+
+.dropdown-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  background: transparent;
+  border: none;
+  color: var(--text-main);
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.dropdown-item:hover {
+  background: var(--color-2);
+  color: var(--color-1);
+}
+
+.dropdown-item.text-danger {
+  color: var(--danger);
+}
+
+.dropdown-item.text-danger:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.dropdown-divider {
+  height: 2px;
+  background: #000000;
+  margin: 6px 0;
+}
+
+/* ==========================================================================
+   Полоса выбора периодов
+   ========================================================================== */
+.period-bar {
+  padding: 12px 18px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.period-label {
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.period-presets {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.period-btn {
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+  padding: 8px 12px;
+  background: var(--bg-card-inner);
+  border: 2px solid #000000;
+  color: var(--text-muted);
+  box-shadow: 2px 2px 0px #000000;
+  cursor: pointer;
+}
+
+.period-btn:hover {
+  background: var(--color-2);
+  color: #ffffff;
+}
+
+.period-btn.active {
+  background: var(--color-1);
+  color: #000000;
+  font-weight: 700;
+  box-shadow: 3px 3px 0px #000000;
+}
+
+.custom-date-range {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.custom-date-range.hidden {
+  display: none;
+}
+
+.date-input-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+}
+
+/* Инпуты */
+.pixel-input,
+.pixel-select {
+  background: var(--bg-input);
+  border: 3px solid #000000;
+  box-shadow: inset 2px 2px 0px rgba(0,0,0,0.5);
+  color: var(--text-main);
+  padding: 8px 10px;
+  font-family: var(--font-sub);
+  font-size: 19px;
+  outline: none;
+}
+
+.pixel-input:focus,
+.pixel-select:focus {
+  border-color: var(--color-2);
+}
+
+/* ==========================================================================
+   KPI Карточки: Игровой статус (GOLD, MANA, SCORE)
+   ========================================================================== */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 18px;
+}
+
+.kpi-card {
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  transition: transform 0.1s ease;
+}
+
+.kpi-card:hover {
+  transform: translate(-2px, -2px);
+  box-shadow: 8px 8px 0px #000000;
+}
+
+.kpi-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.kpi-title {
+  font-family: var(--font-pixel);
+  font-size: 10.5px;
+  color: var(--text-muted);
+  letter-spacing: 0.5px;
+}
+
+.kpi-title i {
+  color: var(--color-2);
+  margin-right: 4px;
+}
+
+[data-theme="dark"] .kpi-title i {
+  color: var(--color-1);
+}
+
+.kpi-icon-wrap {
+  width: 40px;
+  height: 40px;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 18px;
+}
+
+.balance-icon {
+  background: var(--color-1);
+  color: #000000;
+}
+
+.income-icon {
+  background: var(--color-1);
+  color: #000000;
+}
+
+.expense-icon {
+  background: var(--color-2);
+  color: #ffffff;
+}
+
+.savings-icon {
+  background: var(--color-2);
+  color: var(--color-1);
+}
+
+.kpi-value {
+  font-family: var(--font-pixel);
+  font-size: 20px;
+  letter-spacing: -0.5px;
+  margin-bottom: 8px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  color: var(--text-main);
+}
+
+.pixel-text-glow {
+  color: var(--text-income);
+}
+
+[data-theme="dark"] .pixel-text-glow {
+  text-shadow: 2px 2px 0px #000000;
+}
+
+.kpi-subtext {
+  font-size: 16px;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.badge {
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  padding: 3px 6px;
+  border: 2px solid #000000;
+  display: inline-block;
+}
+
+.badge-positive {
+  background: var(--color-1);
+  color: #000000;
+}
+
+.badge-negative {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+/* Цвета сумм в карточках и таблицах */
+.text-income {
+  color: var(--text-income) !important;
+}
+
+[data-theme="dark"] .text-income {
+  text-shadow: 1px 1px 0px #000000;
+}
+
+.text-expense {
+  color: var(--text-expense) !important;
+}
+
+[data-theme="dark"] .text-expense {
+  text-shadow: 1px 1px 0px #000000;
+}
+
+/* ==========================================================================
+   Секция графиков
+   ========================================================================== */
+.charts-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 20px;
+}
+
+.chart-card {
+  padding: 22px;
+}
+
+.chart-card.full-width {
+  grid-column: 1 / -1;
+}
+
+.chart-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chart-card-header h3 {
+  font-family: var(--font-pixel);
+  font-size: 12.5px;
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.chart-card-header h3 i {
+  background: var(--color-1);
+  color: #000000;
+  padding: 3px 5px;
+  border: 2px solid #000000;
+  box-shadow: 1px 1px 0px #000000;
+  font-size: 12px;
+}
+
+.chart-subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.chart-legend-retro {
+  display: flex;
+  gap: 12px;
+  font-family: var(--font-pixel);
+  font-size: 9px;
+  align-items: center;
+}
+
+.legend-chip {
+  padding: 4px 8px;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+  font-weight: 700;
+}
+
+.legend-chip.loot {
+  background: var(--color-1);
+  color: #000000;
+}
+
+.legend-chip.mana {
+  background: var(--color-2);
+  color: #ffffff;
+}
+
+.chart-wrapper {
+  position: relative;
+  width: 100%;
+  height: 290px;
+  background: var(--bg-card-inner);
+  border: 3px solid #000000;
+  padding: 10px;
+}
+
+.chart-wrapper.doughnut-wrapper {
+  height: 270px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.no-chart-data {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: var(--font-pixel);
+  font-size: 11px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.no-chart-data.hidden {
+  display: none;
+}
+
+/* ==========================================================================
+   Секция CRUD: Журнал квестов
+   ========================================================================== */
+.transactions-section {
+  padding: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.section-header h2 {
+  font-family: var(--font-pixel);
+  font-size: 15px;
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.section-header h2 i {
+  background: var(--color-2);
+  color: var(--color-1);
+  padding: 4px 6px;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+  font-size: 14px;
+}
+
+.section-subtitle {
+  font-size: 16px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* Фильтры */
+.filters-panel {
+  padding: 14px 16px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 14px;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.search-box {
+  position: relative;
+  flex: 1;
+  min-width: 240px;
+}
+
+.search-box i {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-2);
+}
+
+.search-box input {
+  width: 100%;
+  padding-left: 36px;
+}
+
+.clear-search {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  color: var(--danger);
+  cursor: pointer;
+  font-size: 16px;
+}
+
+.clear-search.hidden {
+  display: none;
+}
+
+.filter-controls {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-group {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+/* Таблица транзакций */
+.table-container {
+  overflow-x: auto;
+  background: var(--bg-card-inner);
+}
+
+.transactions-table {
+  width: 100%;
+  border-collapse: collapse;
+  text-align: left;
+}
+
+.transactions-table th {
+  background: var(--color-2);
+  color: #ffffff;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 12px 16px;
+  border-bottom: 3px solid #000000;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+
+.transactions-table td {
+  padding: 12px 16px;
+  border-bottom: 2px solid #000000;
+  vertical-align: middle;
+  font-size: 18px;
+}
+
+.transactions-table tbody tr:hover {
+  background: rgba(131, 108, 236, 0.15);
+}
+
+.transaction-date {
+  font-family: var(--font-sub);
+  font-size: 18px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 3px 8px;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+  font-family: var(--font-pixel);
+  font-size: 8.5px;
+  background: var(--bg-card);
+  color: var(--text-main);
+}
+
+.transaction-note {
+  max-width: 260px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.transaction-type-badge {
+  font-family: var(--font-pixel);
+  font-size: 8.5px;
+  padding: 3px 6px;
+  border: 2px solid #000000;
+}
+
+.transaction-type-badge.income {
+  background: var(--color-1);
+  color: #000000;
+}
+
+.transaction-type-badge.expense {
+  background: var(--color-2);
+  color: #ffffff;
+}
+
+.transaction-amount {
+  font-family: var(--font-pixel);
+  font-size: 12px;
+  white-space: nowrap;
+}
+
+.transaction-amount.income {
+  color: var(--text-income);
+}
+
+.transaction-amount.expense {
+  color: var(--text-expense);
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border: 2px solid #000000;
+  box-shadow: 2px 2px 0px #000000;
+  background: var(--bg-card);
+  color: var(--text-main);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.action-btn.edit:hover {
+  background: var(--color-1);
+  color: #000000;
+}
+
+.action-btn.delete:hover {
+  background: var(--danger);
+  color: #ffffff;
+}
+
+.action-btn:active {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+}
+
+/* Пустое состояние */
+.empty-state {
+  padding: 40px 16px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+.empty-state.hidden {
+  display: none;
+}
+
+.empty-icon {
+  font-size: 48px;
+  color: var(--color-2);
+}
+
+.empty-state h3 {
+  font-family: var(--font-pixel);
+  font-size: 14px;
+  color: var(--text-header);
+}
+
+.table-footer {
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  color: var(--text-muted);
+  padding: 4px;
+}
+
+.text-highlight {
+  color: var(--text-income);
+  font-weight: 700;
+}
+
+/* ==========================================================================
+   Модальные окна
+   ========================================================================== */
+.modal-backdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: rgba(0, 0, 0, 0.75);
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-backdrop.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-box {
+  width: 100%;
+  max-width: 500px;
+  padding: 24px;
+  background: var(--bg-card);
+  animation: pixelPop 0.1s ease-out;
+}
+
+@keyframes pixelPop {
+  from { transform: scale(0.92); }
+  to { transform: scale(1); }
+}
+
+.modal-box.modal-sm {
+  max-width: 420px;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  border-bottom: 3px solid #000000;
+  padding-bottom: 12px;
+}
+
+.modal-header h3 {
+  font-family: var(--font-pixel);
+  font-size: 13.5px;
+  color: var(--text-header);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.close-btn {
+  width: 32px;
+  height: 32px;
+  padding: 0;
+}
+
+/* Переключатель Расход/Доход */
+.type-toggle-group {
+  display: flex;
+  background: #000000;
+  padding: 4px;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.pixel-btn-tab {
+  flex: 1;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+  padding: 10px;
+  border: 2px solid #000000;
+  background: var(--bg-card-inner);
+  color: var(--text-muted);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.pixel-btn-tab.active-expense {
+  background: var(--color-2);
+  color: #ffffff;
+  font-weight: 700;
+}
+
+.pixel-btn-tab.active-income {
+  background: var(--color-1);
+  color: #000000;
+  font-weight: 700;
+}
+
+/* Формы */
+.form-group {
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.form-group label {
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+  color: var(--text-muted);
+}
+
+.form-group label .required {
+  color: var(--danger);
+}
+
+.input-with-icon {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.input-with-icon i {
+  position: absolute;
+  left: 12px;
+  color: var(--color-2);
+  font-size: 16px;
+}
+
+.input-with-icon input,
+.input-with-icon select {
+  width: 100%;
+  padding-left: 38px;
+}
+
+.field-error {
+  font-family: var(--font-pixel);
+  font-size: 8.5px;
+  color: var(--danger);
+  min-height: 12px;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 12px;
+  margin-top: 20px;
+  border-top: 3px solid #000000;
+  padding-top: 16px;
+}
+
+.delete-preview-box {
+  background: var(--bg-card-inner);
+  padding: 12px;
+  margin: 14px 0;
+  font-family: var(--font-sub);
+  font-size: 20px;
+  line-height: 1.5;
+}
+
+/* ==========================================================================
+   Уведомления (Toasts)
+   ========================================================================== */
+.toast-container {
+  position: fixed;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  z-index: 2000;
+}
+
+.toast {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  color: var(--text-main);
+  padding: 12px 16px;
+  font-family: var(--font-pixel);
+  font-size: 9.5px;
+  max-width: 380px;
+}
+
+.toast.toast-success {
+  border-left: 8px solid var(--color-1);
+}
+
+.toast.toast-success i {
+  color: var(--color-1);
+}
+
+.toast.toast-danger {
+  border-left: 8px solid var(--danger);
+}
+
+.toast.toast-danger i {
+  color: var(--danger);
+}
+
+.toast.toast-info {
+  border-left: 8px solid var(--color-2);
+}
+
+.toast.toast-info i {
+  color: var(--color-2);
+}
+
+/* ==========================================================================
+   Адаптивность
+   ========================================================================== */
+@media (max-width: 900px) {
+  .charts-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 680px) {
+  .app-container {
+    padding: 12px 8px 48px;
+    gap: 16px;
+  }
+
+  .app-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .header-actions {
+    justify-content: space-between;
+  }
+
+  .header-actions .pixel-btn-main {
+    width: 100%;
+    order: 5;
+  }
+
+  .filters-panel {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-controls {
+    flex-direction: column;
+  }
+
+  .filter-group {
+    justify-content: space-between;
+  }
+
+  .filter-group select {
+    flex: 1;
+  }
+}
