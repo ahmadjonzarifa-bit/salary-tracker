@@ -401,6 +401,84 @@ body {
   color: #ffffff;
 }
 
+/* ==========================================================================
+   Виджет профиля игрока и Neon Cloud
+   ========================================================================== */
+.user-profile-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card-inner);
+  border: 3px solid #000000;
+  box-shadow: 4px 4px 0px #000000;
+  padding: 6px 12px;
+  font-family: var(--font-pixel);
+  font-size: 10px;
+}
+
+.neon-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #00e599;
+  color: #000000;
+  padding: 3px 6px;
+  border: 1px solid #000000;
+  font-weight: 800;
+  font-size: 8.5px;
+  letter-spacing: 0.5px;
+}
+
+.user-name {
+  color: var(--color-1);
+  max-width: 130px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+[data-theme="light"] .user-name {
+  color: var(--text-income);
+}
+
+.pixel-btn-icon-mini {
+  background: var(--danger);
+  color: #ffffff;
+  border: 2px solid #000000;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  font-size: 11px;
+}
+
+.pixel-btn-icon-mini:hover {
+  background: var(--danger-hover);
+}
+
+.pixel-btn-icon-mini:active {
+  transform: translate(1px, 1px);
+}
+
+.pixel-checkbox-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  font-family: var(--font-sub);
+  font-size: 17px;
+  color: var(--text-muted);
+}
+
+.pixel-checkbox-label input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-1);
+  cursor: pointer;
+}
+
 .icon-gold {
   color: var(--color-1);
 }

@@ -1,0 +1,18 @@
+{
+  "name": "salary-tracker",
+  "version": "1.0.0",
+  "description": "8-Bit Retro Pixel Salary & Expense Tracker with Neon Postgres & Vercel",
+  "scripts": {
+    "dev": "vercel dev",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.10.4",
+    "bcryptjs": "^2.4.3",
+    "dotenv": "^16.4.7",
+    "jsonwebtoken": "^9.0.2"
+  },
+  "devDependencies": {
+    "vercel": "^64.7.0"
+  }
+}

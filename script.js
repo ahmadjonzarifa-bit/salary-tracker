@@ -1,6 +1,6 @@
 /**
  * ФинТрекер 8-BIT - Retro Pixel Salary & Expense Tracker
- * script.js - Полная логика приложения: CRUD, Chart.js дашборд, 8-bit аудио, localStorage
+ * script.js - Полная логика приложения: CRUD, Neon Postgres Cloud Sync, Auth, Chart.js, 8-bit аудио
  * Цветовая палитра:
  *   - COLOR 1: #DFE94B (Лайм / Золото)
  *   - COLOR 2: #836CEC (Фиолетовый / Мана)
@@ -11,6 +11,7 @@
 // ==========================================================================
 const STORAGE_KEY = 'salary_tracker_retro_v3';
 const SETTINGS_KEY = 'salary_tracker_retro_settings_v3';
+const TOKEN_KEY = 'salary_tracker_neon_jwt_token';
 
 const COLOR_LIME = '#DFE94B';
 const COLOR_PURPLE = '#836CEC';
@@ -65,6 +66,13 @@ let state = {
     category: 'all',
     search: '',
     sort: 'date_desc'
+  },
+  // Авторизация и облако Neon
+  auth: {
+    token: localStorage.getItem(TOKEN_KEY) || null,
+    user: null,
+    isCloud: false,
+    tab: 'login' // 'login' | 'register'
   },
   editingId: null,
   deletingId: null
@@ -149,16 +157,236 @@ const retroAudio = {
 // ==========================================================================
 // Инициализация при загрузке
 // ==========================================================================
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
   loadSettings();
-  loadTransactions();
+  loadLocalTransactions();
   initTheme();
   initSoundButton();
   initCategorySelects();
   initEventListeners();
   initCharts();
   renderApp();
+
+  // Проверка сессии в Neon Postgres
+  await checkAuthSession();
 });
+
+// ==========================================================================
+// Авторизация и интеграция с Neon Cloud API
+// ==========================================================================
+async function checkAuthSession() {
+  if (!state.auth.token) {
+    updateAuthUI();
+    return;
+  }
+
+  try {
+    const res = await fetch('/api/auth?action=me', {
+      headers: {
+        'Authorization': `Bearer ${state.auth.token}`
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      state.auth.user = data.user;
+      state.auth.isCloud = true;
+      if (data.user.currency) {
+        state.settings.currency = data.user.currency;
+        document.getElementById('currencySelect').value = data.user.currency;
+        updateCurrencySymbolLabels();
+      }
+      updateAuthUI();
+      await fetchCloudTransactions();
+    } else {
+      // Токен невалиден
+      logout(false);
+    }
+  } catch (err) {
+    console.warn('Neon API недоступен локально или оффлайн, работаем из кэша:', err);
+    updateAuthUI();
+  }
+}
+
+function updateAuthUI() {
+  const authBtn = document.getElementById('openAuthModalBtn');
+  const userBadge = document.getElementById('userProfileBadge');
+  const userDisplayName = document.getElementById('userDisplayName');
+
+  if (state.auth.user && state.auth.isCloud) {
+    authBtn.classList.add('hidden');
+    userBadge.classList.remove('hidden');
+    userDisplayName.textContent = state.auth.user.name || state.auth.user.email.split('@')[0];
+  } else {
+    authBtn.classList.remove('hidden');
+    userBadge.classList.add('hidden');
+  }
+}
+
+async function fetchCloudTransactions() {
+  if (!state.auth.token) return;
+
+  try {
+    const res = await fetch('/api/transactions', {
+      headers: {
+        'Authorization': `Bearer ${state.auth.token}`
+      }
+    });
+
+    if (res.ok) {
+      const data = await res.json();
+      if (Array.isArray(data.transactions)) {
+        state.transactions = data.transactions;
+        saveLocalTransactions();
+        renderApp();
+      }
+    }
+  } catch (e) {
+    console.error('Ошибка загрузки транзакций из Neon:', e);
+  }
+}
+
+async function handleAuthSubmit(e) {
+  e.preventDefault();
+
+  const email = document.getElementById('authEmail').value.trim();
+  const password = document.getElementById('authPassword').value;
+  const name = document.getElementById('authName').value.trim();
+  const syncLocal = document.getElementById('authSyncCheckbox').checked;
+
+  const emailError = document.getElementById('authEmailError');
+  const passError = document.getElementById('authPasswordError');
+  emailError.textContent = '';
+  passError.textContent = '';
+
+  if (!email || !email.includes('@')) {
+    emailError.textContent = 'ВВЕДИТЕ КОРРЕКТНЫЙ EMAIL';
+    return;
+  }
+  if (!password || password.length < 6) {
+    passError.textContent = 'ПАРОЛЬ МИНИМУМ 6 ЗНАКОВ';
+    return;
+  }
+
+  const isRegister = state.auth.tab === 'register';
+  const url = isRegister ? '/api/auth?action=register' : '/api/auth?action=login';
+
+  const submitBtn = document.getElementById('submitAuthBtn');
+  submitBtn.disabled = true;
+
+  try {
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password, name })
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      throw new Error(data.error || 'Ошибка входа');
+    }
+
+    // Успешная авторизация
+    state.auth.token = data.token;
+    state.auth.user = data.user;
+    state.auth.isCloud = true;
+    localStorage.setItem(TOKEN_KEY, data.token);
+
+    if (data.user.currency) {
+      state.settings.currency = data.user.currency;
+      document.getElementById('currencySelect').value = data.user.currency;
+      updateCurrencySymbolLabels();
+    }
+
+    updateAuthUI();
+    closeAuthModal();
+
+    // Синхронизация текущих локальных записей в облако Neon
+    if (syncLocal && state.transactions.length > 0) {
+      try {
+        await fetch('/api/transactions?action=sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${data.token}`
+          },
+          body: JSON.stringify({ transactions: state.transactions })
+        });
+      } catch (err) {
+        console.warn('Sync failed:', err);
+      }
+    }
+
+    await fetchCloudTransactions();
+
+    retroAudio.play('coin');
+    showToast(`ДОБРО ПОЖАЛОВАТЬ, ${data.user.name || 'ИГРОК'}! 🐾`, 'success');
+  } catch (err) {
+    retroAudio.play('delete');
+    passError.textContent = err.message.toUpperCase();
+    showToast(err.message, 'danger');
+  } finally {
+    submitBtn.disabled = false;
+  }
+}
+
+function logout(notify = true) {
+  state.auth.token = null;
+  state.auth.user = null;
+  state.auth.isCloud = false;
+  localStorage.removeItem(TOKEN_KEY);
+
+  updateAuthUI();
+  loadLocalTransactions();
+  renderApp();
+
+  if (notify) {
+    retroAudio.play('delete');
+    showToast('ВЫ ВЫШЛИ ИЗ АККАУНТА', 'info');
+  }
+}
+
+// ==========================================================================
+// Модальное окно Auth
+// ==========================================================================
+function openAuthModal() {
+  document.getElementById('authEmailError').textContent = '';
+  document.getElementById('authPasswordError').textContent = '';
+  setAuthTab('login');
+  document.getElementById('authModal').classList.add('open');
+  retroAudio.play('click');
+  setTimeout(() => document.getElementById('authEmail').focus(), 100);
+}
+
+function closeAuthModal() {
+  document.getElementById('authModal').classList.remove('open');
+  retroAudio.play('click');
+}
+
+function setAuthTab(tab) {
+  state.auth.tab = tab;
+  const loginTab = document.getElementById('authTabLogin');
+  const regTab = document.getElementById('authTabRegister');
+  const nameGroup = document.getElementById('authNameGroup');
+  const submitText = document.getElementById('submitAuthText');
+  const title = document.getElementById('authModalTitle');
+
+  if (tab === 'register') {
+    loginTab.className = 'type-toggle-btn pixel-btn-tab';
+    regTab.className = 'type-toggle-btn active-income pixel-btn-tab';
+    nameGroup.classList.remove('hidden');
+    submitText.textContent = 'СОЗДАТЬ ГЕРОЯ';
+    title.innerHTML = '<i class="fa-solid fa-user-plus"></i> РЕГИСТРАЦИЯ ГЕРОЯ';
+  } else {
+    loginTab.className = 'type-toggle-btn active-income pixel-btn-tab';
+    regTab.className = 'type-toggle-btn pixel-btn-tab';
+    nameGroup.classList.add('hidden');
+    submitText.textContent = 'ВОЙТИ В ИГРУ';
+    title.innerHTML = '<i class="fa-solid fa-key"></i> ВХОД В ГИЛЬДИЮ';
+  }
+  retroAudio.play('click');
+}
 
 // ==========================================================================
 // LocalStorage и Демо-данные
@@ -178,9 +406,21 @@ function loadSettings() {
 
 function saveSettings() {
   localStorage.setItem(SETTINGS_KEY, JSON.stringify(state.settings));
+
+  // Если авторизован, сохраняем валюту и в Neon
+  if (state.auth.isCloud && state.auth.token) {
+    fetch('/api/auth?action=settings', {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${state.auth.token}`
+      },
+      body: JSON.stringify({ currency: state.settings.currency })
+    }).catch(e => console.warn(e));
+  }
 }
 
-function loadTransactions() {
+function loadLocalTransactions() {
   const saved = localStorage.getItem(STORAGE_KEY);
   if (saved) {
     try {
@@ -193,7 +433,7 @@ function loadTransactions() {
   generateDemoData();
 }
 
-function saveTransactions() {
+function saveLocalTransactions() {
   localStorage.setItem(STORAGE_KEY, JSON.stringify(state.transactions));
 }
 
@@ -210,7 +450,6 @@ function generateDemoData() {
   }
 
   state.transactions = [
-    // Текущий месяц
     {
       id: generateId(),
       type: 'income',
@@ -273,86 +512,10 @@ function generateDemoData() {
       date: formatDateStr(y, m, 14),
       note: 'Зачарованный плащ и броня',
       createdAt: new Date().toISOString()
-    },
-
-    // Предыдущий месяц
-    {
-      id: generateId(),
-      type: 'income',
-      amount: 145000,
-      categoryId: 'inc_salary',
-      date: formatDateStr(y, m - 1, 5),
-      note: 'Основное жалованье',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: generateId(),
-      type: 'income',
-      amount: 30000,
-      categoryId: 'inc_bonus',
-      date: formatDateStr(y, m - 1, 20),
-      note: 'Трофей за победу над боссом',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: generateId(),
-      type: 'expense',
-      amount: 45000,
-      categoryId: 'exp_housing',
-      date: formatDateStr(y, m - 1, 2),
-      note: 'Плата за таверну',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: generateId(),
-      type: 'expense',
-      amount: 21000,
-      categoryId: 'exp_groceries',
-      date: formatDateStr(y, m - 1, 15),
-      note: 'Провизия на дальний поход',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: generateId(),
-      type: 'expense',
-      amount: 11000,
-      categoryId: 'exp_entertainment',
-      date: formatDateStr(y, m - 1, 18),
-      note: 'Ставки на арене гладиаторов',
-      createdAt: new Date().toISOString()
-    },
-
-    // Двумя месяцами ранее
-    {
-      id: generateId(),
-      type: 'income',
-      amount: 140000,
-      categoryId: 'inc_salary',
-      date: formatDateStr(y, m - 2, 5),
-      note: 'Жалованье',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: generateId(),
-      type: 'expense',
-      amount: 45000,
-      categoryId: 'exp_housing',
-      date: formatDateStr(y, m - 2, 3),
-      note: 'Замок и коммунальные сборы',
-      createdAt: new Date().toISOString()
-    },
-    {
-      id: generateId(),
-      type: 'expense',
-      amount: 16500,
-      categoryId: 'exp_groceries',
-      date: formatDateStr(y, m - 2, 12),
-      note: 'Рынок в порту',
-      createdAt: new Date().toISOString()
     }
   ];
 
-  saveTransactions();
+  saveLocalTransactions();
 }
 
 function generateId() {
@@ -360,9 +523,9 @@ function generateId() {
 }
 
 // ==========================================================================
-// CRUD Операции (Create, Read, Update, Delete)
+// CRUD Операции (Create, Read, Update, Delete) с поддержкой Neon Postgres
 // ==========================================================================
-function createTransaction(data) {
+async function createTransaction(data) {
   const newTx = {
     id: generateId(),
     type: data.type,
@@ -373,11 +536,28 @@ function createTransaction(data) {
     createdAt: new Date().toISOString()
   };
 
+  // 1. Оптимистичное обновление UI
   state.transactions.unshift(newTx);
-  saveTransactions();
+  saveLocalTransactions();
   renderApp();
   retroAudio.play('coin');
-  showToast('КВЕСТ ВНЕСЁН В ЖУРНАЛ! +EXP', 'success');
+  showToast('КВЕСТ ВНЕСЁН В ЖУРНАЛ! +EXP 🐾', 'success');
+
+  // 2. Синхронизация с Neon Postgres (если авторизован)
+  if (state.auth.isCloud && state.auth.token) {
+    try {
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}`
+        },
+        body: JSON.stringify(newTx)
+      });
+    } catch (e) {
+      console.warn('Не удалось отправить в Neon, сохранено локально:', e);
+    }
+  }
 }
 
 function getFilteredTransactions() {
@@ -410,15 +590,14 @@ function getFilteredTransactions() {
   });
 }
 
-function updateTransaction(id, updatedData) {
+async function updateTransaction(id, updatedData) {
   const index = state.transactions.findIndex(t => t.id === id);
   if (index === -1) {
     showToast('СВИТОК НЕ НАЙДЕН!', 'danger');
     return;
   }
 
-  state.transactions[index] = {
-    ...state.transactions[index],
+  const payload = {
     type: updatedData.type,
     amount: parseFloat(updatedData.amount),
     categoryId: updatedData.categoryId,
@@ -426,21 +605,56 @@ function updateTransaction(id, updatedData) {
     note: updatedData.note ? updatedData.note.trim() : ''
   };
 
-  saveTransactions();
+  state.transactions[index] = {
+    ...state.transactions[index],
+    ...payload
+  };
+
+  saveLocalTransactions();
   renderApp();
   retroAudio.play('coin');
-  showToast('ЖУРНАЛ УСПЕШНО ПЕРЕПИСАН!', 'success');
+  showToast('ЖУРНАЛ УСПЕШНО ПЕРЕПИСАН! 🐾', 'success');
+
+  // Синхронизация с Neon
+  if (state.auth.isCloud && state.auth.token) {
+    try {
+      await fetch(`/api/transactions?id=${id}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${state.auth.token}`
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (e) {
+      console.warn('Neon update failed:', e);
+    }
+  }
 }
 
-function deleteTransaction(id) {
+async function deleteTransaction(id) {
   const beforeLen = state.transactions.length;
   state.transactions = state.transactions.filter(t => t.id !== id);
 
   if (state.transactions.length < beforeLen) {
-    saveTransactions();
+    saveLocalTransactions();
     renderApp();
     retroAudio.play('delete');
-    showToast('СВИТОК СОЖЖЁН И СТЁРТ!', 'info');
+    showToast('СВИТОК СОЖЖЁН И СТЁРТ! 🐾', 'info');
+
+    // Удаление из Neon
+    if (state.auth.isCloud && state.auth.token) {
+      try {
+        await fetch(`/api/transactions?id=${id}`, {
+          method: 'DELETE',
+          headers: {
+            'Authorization': `Bearer ${state.auth.token}`
+          }
+        });
+      } catch (e) {
+        console.warn('Neon delete failed:', e);
+      }
+    }
   }
 }
 
@@ -645,9 +859,8 @@ function renderTable(transactions) {
 function initCharts() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   const gridColor = isDark ? '#2e2359' : '#d2cbfa';
-  const textColor = isDark ? '#DFE94B' : '#4e4474';
+  const textColor = isDark ? '#DFE94B' : '#1b1040';
 
-  // 1. Столбчатый график: Битва доходов (#DFE94B) и расходов (#836CEC)
   const ctxBar = document.getElementById('barComparisonChart').getContext('2d');
   charts.barComparison = new Chart(ctxBar, {
     type: 'bar',
@@ -676,9 +889,7 @@ function initCharts() {
       responsive: true,
       maintainAspectRatio: false,
       plugins: {
-        legend: {
-          display: false
-        },
+        legend: { display: false },
         tooltip: {
           titleFont: { family: 'Press Start 2P', size: 9 },
           bodyFont: { family: 'VT323', size: 16 },
@@ -707,7 +918,6 @@ function initCharts() {
     }
   });
 
-  // 2. Круговая диаграмма расходов
   const ctxExp = document.getElementById('expenseCategoryChart').getContext('2d');
   charts.expenseCategory = new Chart(ctxExp, {
     type: 'doughnut',
@@ -753,7 +963,6 @@ function initCharts() {
     }
   });
 
-  // 3. Круговая диаграмма доходов
   const ctxInc = document.getElementById('incomeCategoryChart').getContext('2d');
   charts.incomeCategory = new Chart(ctxInc, {
     type: 'doughnut',
@@ -835,7 +1044,7 @@ function updateCharts(filteredTransactions) {
     charts.barComparison.update();
   }
 
-  // Расходы (в палитре фиолетовый и вариации)
+  // Расходы
   const expCats = {};
   filteredTransactions.filter(t => t.type === 'expense').forEach(tx => {
     const cat = getCategory('expense', tx.categoryId);
@@ -864,7 +1073,7 @@ function updateCharts(filteredTransactions) {
     charts.expenseCategory.update();
   }
 
-  // Доходы (в палитре лайм и вариации)
+  // Доходы
   const incCats = {};
   filteredTransactions.filter(t => t.type === 'income').forEach(tx => {
     const cat = getCategory('income', tx.categoryId);
@@ -975,7 +1184,6 @@ function initEventListeners() {
       e.stopPropagation();
       retroAudio.play('meow');
       
-      // Запускаем несколько лапок веером
       const rect = luckyCatBtn.getBoundingClientRect();
       const cx = rect.left + rect.width / 2;
       const cy = rect.top + rect.height / 2;
@@ -993,6 +1201,15 @@ function initEventListeners() {
       showToast(randomMeow, 'success');
     });
   }
+
+  // Авторизация: открытие, вкладки, выход
+  document.getElementById('openAuthModalBtn').addEventListener('click', openAuthModal);
+  document.getElementById('closeAuthModalBtn').addEventListener('click', closeAuthModal);
+  document.getElementById('cancelAuthModalBtn').addEventListener('click', closeAuthModal);
+  document.getElementById('authTabLogin').addEventListener('click', () => setAuthTab('login'));
+  document.getElementById('authTabRegister').addEventListener('click', () => setAuthTab('register'));
+  document.getElementById('authForm').addEventListener('submit', handleAuthSubmit);
+  document.getElementById('logoutBtn').addEventListener('click', () => logout(true));
 
   // Экспорт / Импорт
   document.getElementById('exportCsvBtn').addEventListener('click', exportToCsv);
@@ -1013,7 +1230,7 @@ function initEventListeners() {
   document.getElementById('clearAllBtn').addEventListener('click', () => {
     if (confirm('ВНИМАНИЕ! СТЕРЕТЬ ВСЮ ПАМЯТЬ КАЗНЫ?')) {
       state.transactions = [];
-      saveTransactions();
+      saveLocalTransactions();
       renderApp();
       retroAudio.play('delete');
       showToast('ПАМЯТЬ СТЁРТА!', 'danger');
@@ -1087,7 +1304,7 @@ function initEventListeners() {
     renderApp();
   });
 
-  // Открытие модалок
+  // Открытие модалок транзакций
   document.getElementById('openAddModalBtn').addEventListener('click', () => openModal());
   document.getElementById('addTransactionSecondaryBtn').addEventListener('click', () => openModal());
   document.getElementById('emptyAddBtn').addEventListener('click', () => openModal());
@@ -1100,7 +1317,7 @@ function initEventListeners() {
   document.getElementById('typeExpenseBtn').addEventListener('click', () => setModalType('expense'));
   document.getElementById('typeIncomeBtn').addEventListener('click', () => setModalType('income'));
 
-  // Сабмит формы
+  // Сабмит формы транзакции
   document.getElementById('transactionForm').addEventListener('submit', handleFormSubmit);
 
   // Делегирование таблицы
@@ -1131,20 +1348,23 @@ function initEventListeners() {
   window.addEventListener('click', (e) => {
     const modal = document.getElementById('transactionModal');
     const delModal = document.getElementById('deleteModal');
+    const authModal = document.getElementById('authModal');
     if (e.target === modal) closeModal();
     if (e.target === delModal) closeDeleteModal();
+    if (e.target === authModal) closeAuthModal();
   });
 
   window.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
       closeModal();
       closeDeleteModal();
+      closeAuthModal();
     }
   });
 }
 
 // ==========================================================================
-// Модальные окна
+// Модальные окна транзакций
 // ==========================================================================
 function openModal(editData = null) {
   const modal = document.getElementById('transactionModal');
@@ -1343,7 +1563,7 @@ function exportToCsv() {
 
 function exportToJson() {
   const data = {
-    version: 'retro_8bit_3.0',
+    version: 'retro_8bit_neon_4.0',
     exportedAt: new Date().toISOString(),
     settings: state.settings,
     transactions: state.transactions
@@ -1361,7 +1581,7 @@ function importFromJson(e) {
   if (!file) return;
 
   const reader = new FileReader();
-  reader.onload = (event) => {
+  reader.onload = async (event) => {
     try {
       const parsed = JSON.parse(event.target.result);
       if (Array.isArray(parsed.transactions)) {
@@ -1373,11 +1593,23 @@ function importFromJson(e) {
         throw new Error('НЕВЕРНЫЙ СЕЙВ');
       }
 
-      saveTransactions();
-      saveSettings();
+      saveLocalTransactions();
       renderApp();
+
+      // Если в сети Neon — синхронизируем
+      if (state.auth.isCloud && state.auth.token) {
+        await fetch('/api/transactions?action=sync', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${state.auth.token}`
+          },
+          body: JSON.stringify({ transactions: state.transactions })
+        });
+      }
+
       retroAudio.play('coin');
-      showToast('СЕЙВ УСПЕШНО ЗАГРУЖЕН!', 'success');
+      showToast('СЕЙВ УСПЕШНО ЗАГРУЖЕН! 🐾', 'success');
     } catch (err) {
       retroAudio.play('delete');
       showToast('ОШИБКА ЧТЕНИЯ СЕЙВА!', 'danger');
@@ -1457,7 +1689,7 @@ function updateChartTheme() {
 }
 
 // ==========================================================================
-// Toast Уведомления
+// Toast Уведомления и Анимация Лапок
 // ==========================================================================
 function showToast(message, type = 'info') {
   const container = document.getElementById('toastContainer');
@@ -1465,7 +1697,7 @@ function showToast(message, type = 'info') {
   toast.className = `toast toast-${type}`;
 
   let icon = 'fa-circle-info';
-  if (type === 'success') icon = 'fa-coins';
+  if (type === 'success') icon = 'fa-paw';
   if (type === 'danger') icon = 'fa-skull';
 
   toast.innerHTML = `

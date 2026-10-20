@@ -94,6 +94,23 @@
           </div>
         </div>
 
+        <!-- Блок профиля игрока / Авторизация (Neon Cloud) -->
+        <div id="authHeaderContainer">
+          <button id="openAuthModalBtn" class="btn btn-secondary pixel-btn cat-paw-btn" title="Войти или зарегистрироваться">
+            <i class="fa-solid fa-user-astronaut"></i>
+            <span>АККАУНТ</span>
+            <i class="fa-solid fa-paw"></i>
+          </button>
+
+          <div id="userProfileBadge" class="user-profile-badge pixel-button-look hidden">
+            <span class="neon-indicator" title="Подключено к Neon Serverless Postgres"><i class="fa-solid fa-bolt"></i> NEON</span>
+            <span id="userDisplayName" class="user-name">Игрок</span>
+            <button id="logoutBtn" class="pixel-btn-icon-mini text-danger" title="Выйти из аккаунта">
+              <i class="fa-solid fa-right-from-bracket"></i>
+            </button>
+          </div>
+        </div>
+
         <!-- Кнопка добавления транзакции с кошачьими лапками -->
         <button id="openAddModalBtn" class="btn btn-primary pixel-btn-main cat-paw-btn">
           <i class="fa-solid fa-paw paw-left"></i>
@@ -427,6 +444,74 @@
           <i class="fa-solid fa-paw"></i> СЖЕЧЬ ЛАПКОЙ 🐾
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- Модальное окно: Регистрация и Вход (Neon Cloud Auth) -->
+  <div id="authModal" class="modal-backdrop">
+    <div class="modal-box pixel-box auth-modal-box">
+      <div class="modal-header">
+        <h3 id="authModalTitle"><i class="fa-solid fa-key"></i> ГИЛЬДИЯ ИГРОКОВ</h3>
+        <button id="closeAuthModalBtn" class="close-btn pixel-btn" title="Закрыть">
+          <i class="fa-solid fa-xmark"></i>
+        </button>
+      </div>
+
+      <!-- Переключатель Вход / Регистрация -->
+      <div class="type-toggle-group pixel-border">
+        <button type="button" class="type-toggle-btn active-income pixel-btn-tab" id="authTabLogin">
+          <i class="fa-solid fa-right-to-bracket"></i> ВХОД
+        </button>
+        <button type="button" class="type-toggle-btn pixel-btn-tab" id="authTabRegister">
+          <i class="fa-solid fa-user-plus"></i> РЕГИСТРАЦИЯ
+        </button>
+      </div>
+
+      <form id="authForm" novalidate>
+        <!-- Имя (только для регистрации) -->
+        <div class="form-group hidden" id="authNameGroup">
+          <label for="authName">ИМЯ ГЕРОЯ</label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-user-tag"></i>
+            <input type="text" id="authName" class="pixel-input" placeholder="Например: Кот Рыцарь">
+          </div>
+        </div>
+
+        <!-- Email -->
+        <div class="form-group">
+          <label for="authEmail">EMAIL <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-envelope"></i>
+            <input type="email" id="authEmail" class="pixel-input" placeholder="player@retro.quest" required>
+          </div>
+          <span class="field-error" id="authEmailError"></span>
+        </div>
+
+        <!-- Пароль -->
+        <div class="form-group">
+          <label for="authPassword">ПАРОЛЬ <span class="required">*</span></label>
+          <div class="input-with-icon">
+            <i class="fa-solid fa-lock"></i>
+            <input type="password" id="authPassword" class="pixel-input" placeholder="Минимум 6 символов" required>
+          </div>
+          <span class="field-error" id="authPasswordError"></span>
+        </div>
+
+        <!-- Опция синхронизации данных -->
+        <div class="form-group auth-sync-option" id="authSyncGroup">
+          <label class="pixel-checkbox-label">
+            <input type="checkbox" id="authSyncCheckbox" checked>
+            <span>Синхронизировать текущие квесты в облако Neon 🐾</span>
+          </label>
+        </div>
+
+        <div class="modal-footer">
+          <button type="button" id="cancelAuthModalBtn" class="btn btn-secondary pixel-btn">ОТМЕНА</button>
+          <button type="submit" id="submitAuthBtn" class="btn btn-primary pixel-btn-main cat-paw-btn">
+            <i class="fa-solid fa-paw"></i> <span id="submitAuthText">ВОЙТИ В ИГРУ</span> 🐾
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 
